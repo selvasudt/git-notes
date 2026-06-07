@@ -1,504 +1,437 @@
 # 01 · Git Introduction & Setup
 
-> **Audience:** Senior SWE · Backend Engineer · DevOps · Tech Lead interviews  
-> **Prerequisite:** None — this is the entry point of the Git knowledge base
+> **Audience:** Senior SWE · Backend Engineer · DevOps · Tech Lead  
+> **Series:** Git Knowledge Base — File 1 of 12
 
 ---
 
 ## Table of Contents
-
-1. [What is Version Control?](#1-what-is-version-control)
-2. [Types of VCS](#2-types-of-vcs)
-3. [What is Git?](#3-what-is-git)
-4. [What is a Git Repository?](#4-what-is-a-git-repository)
-5. [Git Installation & Verification](#5-git-installation--verification)
-6. [Git Configuration (System · Global · Local)](#6-git-configuration-system--global--local)
-7. [Initialising a Repository — `git init`](#7-initialising-a-repository--git-init)
-8. [What is GitHub? (Git vs GitHub)](#8-what-is-github-git-vs-github)
-9. [Interview Questions & Model Answers](#9-interview-questions--model-answers)
-10. [Quick Revision Cheatsheet](#10-quick-revision-cheatsheet)
-11. [Real-World Workflows](#11-real-world-workflows)
-12. [Troubleshooting Common Setup Issues](#12-troubleshooting-common-setup-issues)
+1. [Version Control System (VCS)](#1-version-control-system-vcs)
+2. [Git](#2-git)
+3. [Git Repository](#3-git-repository)
+4. [GitHub vs Git](#4-github-vs-git)
+5. [git init](#5-git-init)
+6. [git config](#6-git-config)
+7. [Interview Questions & Answers](#7-interview-questions--answers)
+8. [Quick Revision Cheatsheet](#8-quick-revision-cheatsheet)
 
 ---
 
-## 1. What is Version Control?
+# 1. Version Control System (VCS)
 
-### Definition
+## What is it?
+A **Version Control System** tracks and records changes to files over time so you can recall specific versions, compare changes, identify who changed what, and restore older states when required.
 
-A **Version Control System (VCS)** tracks changes to files over time so you can recall specific versions later, understand *what* changed, *when* it changed, *who* changed it, and *why* it changed.
+## Why It Matters
+- Answers **WHAT** changed, **WHEN**, **WHO** changed it, and **WHY**
+- Enables multiple developers to work in parallel without overwriting each other
+- Provides rollback capability when bugs are introduced
+- Serves as the complete audit trail for compliance and debugging
+- Eliminates the "final_v2_REALLY_FINAL.java" naming problem
 
-### The Problem Without VCS
-
+**Without VCS vs With VCS:**
 ```
-paymentService.java          ← which one is production?
-paymentService_final.java
-paymentService_final_final.java
-paymentService_final_monday.java
-```
-
-Without VCS you rely on manual file naming conventions — error-prone, unscalable, and impossible to diff or rollback cleanly.
-
-### With VCS — Structured History
-
-```
-File: paymentService.java
-
-Version 1  ─ Author: Shreya   ─ 4 May 2026  ─ "basic pay() method"
-Version 2  ─ Author: Shreya   ─ 5 May 2026  ─ "add UPI flow"         ← parent: v1
-Version 3  ─ Author: Ankit    ─ 6 May 2026  ─ "add validation"        ← parent: v2
+Without VCS:                        With VCS:
+paymentService.java                 v1 — Author: Shreya — 4 May — "basic pay()"
+paymentService_final.java           v2 — Author: Shreya — 5 May — "add UPI"
+paymentService_final2.java          v3 — Author: Ankit  — 6 May — "validation"
+paymentService_FINAL_monday.java
 ```
 
-VCS answers **WHAT · WHEN · WHO · WHY** for every change.
+## Internal Working
+VCS stores history as a sequence of snapshots or deltas. Two major models:
 
-### Why It Matters (Real-World)
+**Centralised VCS (SVN, Perforce):**
+```
+Server (all history) ← single point of failure
+  ├── Dev A (working copy only)
+  ├── Dev B (working copy only)
+  └── Dev C (working copy only)
+```
 
-| Scenario | Without VCS | With VCS |
-|---|---|---|
-| Production bug introduced | Grep through emails | `git blame` + `git bisect` |
-| Rollback needed | Restore from backup (hours) | `git revert` / `git reset` (seconds) |
-| Two devs edit same file | Overwrite each other | Merge with conflict resolution |
-| Audit / compliance | Manual log | Full immutable history |
-| Release branching | Copy folders | Named branches + tags |
+**Distributed VCS (Git, Mercurial):**
+```
+Remote (shared hub)
+  ├── Dev A (FULL repository — complete history)
+  ├── Dev B (FULL repository — complete history)
+  └── Dev C (FULL repository — complete history)
+```
+Every clone IS a full backup.
+
+## Command Explanation
+No specific commands here — VCS is a concept. See `git init` to initialise a Git VCS.
 
 ---
 
-## 2. Types of VCS
+# 2. Git
 
-### 2.1 Centralised VCS (CVCS) — e.g. SVN, Perforce
+## What is it?
+**Git** is a free, open-source, distributed version control system created by Linus Torvalds in 2005 to manage Linux kernel development. It tracks file changes using a content-addressable object database.
 
-```
-         ┌─────────────┐
-         │   Server    │  ← single source of truth
-         │  (history)  │
-         └──────┬──────┘
-       ┌────────┼────────┐
-   Dev A      Dev B    Dev C
- (working   (working  (working
-  copy)      copy)     copy)
-```
+## Why It Matters
+- **Speed:** All core operations (commit, log, diff, branch) are local — no network required
+- **Integrity:** Every object is SHA-1 hashed — corruption is immediately detectable
+- **Non-linear development:** Lightweight branches enable parallel feature development
+- **Industry standard:** Used by virtually every software team worldwide
 
-**Drawback:** Single point of failure. No network → cannot commit.
-
-### 2.2 Distributed VCS (DVCS) — Git, Mercurial
+## Internal Working
+Git does **NOT** store diffs. It stores **snapshots** of the entire project at each commit.
 
 ```
-         ┌─────────────┐
-         │  Remote     │  ← shared, but NOT single point of failure
-         │  (GitHub)   │
-         └──────┬──────┘
-       ┌────────┼────────┐
-   Dev A      Dev B    Dev C
- (full repo) (full repo) (full repo)
+Commit C1 → snapshot of ALL files at that point in time
+Commit C2 → snapshot of ALL files (unchanged files re-use existing blob objects)
+Commit C3 → snapshot of ALL files
 ```
 
-Every developer holds the **complete repository** — full history, all branches. You can commit, branch, and view history entirely offline.
+Every object is stored in `.git/objects/` and identified by SHA-1 hash of its content — this is called **content-addressable storage**.
 
-> **Interview Insight:** Git is a DVCS. Every clone is a full backup of the repo. This is why Git is resilient — if GitHub goes down, every developer still has a complete copy locally.
-
----
-
-## 3. What is Git?
-
-### Definition
-
-Git is a **free, open-source, distributed version control system** created by Linus Torvalds in 2005 (to manage Linux kernel development after the BitKeeper licence was revoked).
-
-### Core Design Goals
-
-| Goal | How Git Achieves It |
-|---|---|
-| Speed | Local operations (no network for commit/log/diff) |
-| Data integrity | SHA-1 hashing on every object |
-| Non-linear development | Lightweight branching and merging |
-| Fully distributed | Every clone is a complete repo |
-| Large project support | Designed for the Linux kernel (millions of lines) |
-
-### Git's Internal Model (Mental Model — essential for interviews)
-
-Git does **NOT** store file diffs. It stores **snapshots**.
-
+The four object types:
 ```
-Commit C1  →  snapshot of entire project at that point in time
-Commit C2  →  snapshot of entire project (unchanged files share blob objects)
-Commit C3  →  snapshot of entire project
+blob    → stores raw file content
+tree    → stores directory structure (maps names → blobs/trees)
+commit  → stores snapshot metadata (tree + parent + author + message)
+tag     → stores named annotated reference to a commit
 ```
 
-Each commit points to the previous commit, forming a **Directed Acyclic Graph (DAG)**.
+## Command Explanation
 
-> **Interview Insight:** "Git stores snapshots, not diffs" is one of the most important things to understand about Git's internal model. SVN stores diffs; Git stores content-addressed snapshots, which makes branching and merging dramatically faster.
-
----
-
-## 4. What is a Git Repository?
-
-### Definition
-
-A **Git Repository (repo)** is a directory tracked and managed by Git. It contains:
-- Your project files (Working Directory)
-- A hidden `.git/` folder — the actual Git database
-
-### Structure of `.git/` Directory
-
-```
-.git/
-├── HEAD          ← pointer to current branch ref
-├── config        ← local config (user.name, user.email, aliases)
-├── index         ← staging area (binary file)
-├── objects/      ← ALL Git objects (blobs, trees, commits, tags)
-│   ├── 42/
-│   │   └── f9a3297b7e90d22ef17e255c4aca705b4a6f4c  ← blob
-│   ├── info/
-│   └── pack/
-├── refs/
-│   ├── heads/    ← local branch pointers
-│   │   └── main
-│   └── tags/     ← tag pointers
-├── logs/         ← reflog data
-└── hooks/        ← pre-commit, pre-push scripts
-```
-
-> **Interview Insight:** When you delete the `.git/` folder you destroy the entire version history. The project files remain but Git tracking is completely gone. This is why `.git/` is sacred.
-
-### Types of Repositories
-
-| Type | Description | Use Case |
-|---|---|---|
-| **Local** | On your machine | Day-to-day development |
-| **Remote** | On a server (GitHub/GitLab/Bitbucket) | Team collaboration, backup |
-| **Bare** | No working directory, only `.git/` contents | Server-side repos (what GitHub stores internally) |
-| **Fork** | A copy of another repo under your account | Open-source contributions |
-
----
-
-## 5. Git Installation & Verification
-
-### Installation
-
+### Syntax
 ```bash
-# macOS (Homebrew)
-brew install git
+git --version
+```
 
-# Ubuntu / Debian
-sudo apt update && sudo apt install git -y
+**Options:**
+```bash
+git --version          # show installed Git version
+git --help             # list common commands
+git help <command>     # detailed help for a command
+git <command> --help   # same as above
+```
 
-# Windows
-# Download from: https://git-scm.com/download/win
-
-# Verify installation
+**Example:**
+```bash
 git --version
 # git version 2.39.5 (Apple Git-154)
 ```
 
-### Verify Git is Working in a Project
+---
 
-```bash
-# Inside a non-git folder
-git branch
-# fatal: not a git repository (or any of the parent directories): .git
+# 3. Git Repository
 
-# This error means: you haven't run git init yet → correct behaviour
+## What is it?
+A **Git repository (repo)** is any directory that Git is tracking. It contains your project files (Working Directory) plus a hidden `.git/` folder which IS the entire Git database — all history, branches, tags, and configuration.
+
+## Why It Matters
+- The `.git/` folder IS the repository — deleting it destroys all history
+- Every clone of a remote repo contains the complete `.git/` database locally
+- Understanding repo structure is essential for diagnosing and recovering from problems
+
+## Internal Working
 ```
+project/                       ← Working Directory (your files)
+└── .git/                      ← Git Database (DO NOT MANUALLY EDIT)
+    ├── HEAD                   ← pointer to current branch
+    ├── config                 ← local configuration
+    ├── index                  ← staging area (binary)
+    ├── objects/               ← ALL Git objects (blobs, trees, commits, tags)
+    │   ├── 42/                ← folder = first 2 chars of SHA
+    │   │   └── f9a3297b...    ← file = remaining 38 chars of SHA
+    │   ├── info/
+    │   └── pack/              ← packed objects (compressed)
+    ├── refs/
+    │   ├── heads/             ← local branch pointers
+    │   │   └── main           ← contains SHA of latest commit on main
+    │   ├── remotes/           ← remote-tracking refs
+    │   └── tags/              ← tag pointers
+    ├── logs/                  ← reflog data
+    └── hooks/                 ← automation scripts
+```
+
+**Types of repositories:**
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| Local | On your machine with working dir | Day-to-day development |
+| Remote | On a server (GitHub/GitLab) | Collaboration, backup |
+| Bare | No working dir, only `.git/` contents | Server-side hosting |
+
+## Command Explanation
+
+### Syntax
+```bash
+git init [directory] [options]
+```
+*(Full coverage in Section 5 — `git init`)*
 
 ---
 
-## 6. Git Configuration (System · Global · Local)
+# 4. GitHub vs Git
 
-### Three Configuration Levels
+## What is it?
+- **Git** — the version control *tool* (CLI program installed on your machine)
+- **GitHub** — a cloud *platform* that hosts Git repositories and adds collaboration features (PRs, Issues, Actions) on top of Git
 
+## Why It Matters
+Confusing them is a common interview mistake. Git works entirely without GitHub. GitHub is worthless without Git. They are completely separate things.
+
+## Internal Working
 ```
-System  (/etc/gitconfig)          ← applies to ALL users on the machine
-  └── Global (~/.gitconfig)       ← applies to ALL repos for current user
-        └── Local (.git/config)   ← applies only to THIS repository  ← highest priority
+Git (local tool):                   GitHub (cloud service):
+  git commit                          Pull Requests (code review UI)
+  git branch                          Issues (bug/feature tracking)
+  git merge                           Actions (CI/CD pipelines)
+  git log                             Protected Branches (quality gates)
+  ← all local, no network needed →    ← all server-side, needs network →
 ```
 
-**Priority:** Local > Global > System (lower file always wins)
+GitHub alternatives: **GitLab** (self-hostable, built-in CI/CD), **Bitbucket** (Atlassian/Jira integration), **Gitea** (lightweight, self-hosted), **Azure DevOps** (enterprise/Microsoft).
 
-### Setting Username and Email
+## Command Explanation
 
+### Syntax
 ```bash
-# Local (recommended when working across multiple GitHub accounts)
-git config --local user.name  "Shreya"
-git config --local user.email "shreya@company.com"
-
-# Global (most common setup for personal machines)
-git config --global user.name  "Shreya"
-git config --global user.email "shreya@personal.com"
-
-# System (admin use only)
-git config --system user.name  "CI-Bot"
+# Connect local repo to GitHub remote
+git remote add origin <url>
+git push -u origin main
 ```
 
-> **Why this matters:** `user.name` and `user.email` are embedded in every commit object. They appear in `git log`, GitHub commit history, and blame views. They are NOT authentication credentials — they are metadata only.
-
-### Viewing Configuration
-
-```bash
-git config --list                   # show all effective configs
-git config --list --show-origin     # show config + which file it came from
-git config user.name                # show single key
-```
-
-### Useful Additional Configurations
-
-```bash
-# Set default branch name to 'main'
-git config --global init.defaultBranch main
-
-# Set preferred editor
-git config --global core.editor "vim"
-git config --global core.editor "code --wait"   # VS Code
-
-# Create command aliases
-git config --local alias.st   status
-git config --local alias.co   checkout
-git config --local alias.br   branch
-git config --local alias.lg   "log --oneline --graph --all --decorate"
-
-# Now: git st  → git status
-#      git lg  → beautiful commit graph
-
-# Auto-correct line endings (cross-platform teams)
-git config --global core.autocrlf input    # macOS/Linux
-git config --global core.autocrlf true     # Windows
-```
-
-### Where is Config Stored?
-
-```bash
-# Global config file
-cat ~/.gitconfig
-
-# Local config file (inside repo)
-cat .git/config
-```
+**No Git command installs or configures "GitHub" — it is a web service you access via browser or `gh` CLI.**
 
 ---
 
-## 7. Initialising a Repository — `git init`
+# 5. git init
 
-### What It Does Internally
+## What is it?
+`git init` initialises a new Git repository in the current directory (or a specified path). It creates the `.git/` folder which begins the Git database for that project.
 
-```bash
-git init
-# Initialized empty Git repository in /Users/shreya/Projects/LearnGit/.git/
-```
+## Why It Matters
+- Starting point of every new Git-managed project
+- Without it, no Git commands work (`fatal: not a git repository`)
+- Running it in the wrong directory is a common mistake that requires cleanup
 
-Internally Git:
-1. Creates the `.git/` directory
-2. Creates `HEAD` file pointing to `refs/heads/main` (or `master`)
-3. Creates empty `objects/` and `refs/` directories
-4. Creates default `config` file with local settings
+## Internal Working
+When `git init` runs:
+1. Creates `.git/` directory
+2. Creates `HEAD` file: `ref: refs/heads/main` (points to default branch)
+3. Creates empty `objects/` directory (no objects yet)
+4. Creates empty `refs/heads/` and `refs/tags/` directories
+5. Creates default `config` file with `[core]` settings
 
-### Anatomy: Before vs After `git init`
-
-```
-BEFORE git init:          AFTER git init:
-LearnGit/                 LearnGit/
-├── src/                  ├── .git/            ← created by git init
-├── pom.xml               │   ├── HEAD
-└── .gitignore            │   ├── config
-                          │   ├── objects/
-                          │   └── refs/
-                          ├── src/
-                          ├── pom.xml
-                          └── .gitignore
-```
-
-### States After `git init`
-
-After `git init` but **before any `git add`**:
-- All files are in **UNTRACKED** state
-- Git is aware they exist in the Working Directory
-- Git is NOT managing their history yet
-- Staging Area (`.git/index`) does NOT exist yet
-- Local Repository (`.git/objects/`) is empty
+**State after `git init` — before any `git add`:**
+- All files are **UNTRACKED** — Git is aware they exist but not managing them
+- `.git/index` does NOT exist yet (created on first `git add`)
+- `.git/objects/` is empty (no blobs created yet)
 
 ```bash
 git status
 # On branch main
 # No commits yet
 # Untracked files:
-#   (use "git add <file>..." to include in what will be committed)
-#       src/
-#       pom.xml
-#       .gitignore
+#   src/
+#   pom.xml
 ```
 
-### `git init --bare` (Advanced)
+## Command Explanation
 
+### Syntax
 ```bash
-git init --bare /srv/repos/myproject.git
+git init [<directory>] [--bare] [--initial-branch=<name>]
 ```
 
-Creates a repo with no working directory — only the `.git/` contents at the top level. Used for server-side repositories (Git hosting, CI/CD systems). You never directly edit files in a bare repo.
-
----
-
-## 8. What is GitHub? (Git vs GitHub)
-
-### The Distinction
-
-| | Git | GitHub |
-|---|---|---|
-| **Type** | Version control tool | Cloud hosting platform |
-| **Creator** | Linus Torvalds (2005) | Tom Preston-Werner et al. (2008) |
-| **Runs on** | Local machine | Web (Microsoft-owned) |
-| **Requires network?** | No (local operations) | Yes |
-| **Alternatives** | Mercurial, SVN, Perforce | GitLab, Bitbucket, Gitea |
-
-> **Interview Insight:** "Git and GitHub are NOT the same thing." This is a surprisingly common interview question at all levels. Git is the tool; GitHub is a service that hosts Git repositories and adds collaboration features on top.
-
-### What GitHub Adds on Top of Git
-
-- **Pull Requests (PRs)** — code review workflow
-- **Issues & Projects** — project management
-- **Actions** — CI/CD pipelines
-- **Protected Branches** — enforce review before merge
-- **Webhooks** — trigger external services on push
-- **Code scanning** — security analysis
-- **GitHub Packages** — artifact registry
-
-### Alternatives to GitHub
-
-| Platform | Owned By | Key Differentiator |
-|---|---|---|
-| GitLab | GitLab Inc. | Built-in CI/CD, self-hostable |
-| Bitbucket | Atlassian | Tight Jira integration |
-| Azure DevOps | Microsoft | Enterprise, Active Directory |
-| Gitea | Open-source | Lightweight, self-hosted |
-| AWS CodeCommit | Amazon | AWS-native, IAM auth |
-
----
-
-## 9. Interview Questions & Model Answers
-
-### Q1: "What is the difference between Git and SVN?"
-
-**Model Answer:**
-> Git is a distributed VCS — every developer has a full copy of the repository including complete history. SVN is centralised — history lives only on the server. With Git, you can commit, branch, and view logs offline. Branching in Git is a O(1) operation (just creating a pointer); in SVN it copies files server-side. Git also uses content-addressed storage (SHA hashing) ensuring data integrity, while SVN uses sequential revision numbers.
-
-### Q2: "What happens when you run `git init`?"
-
-**Model Answer:**
-> `git init` creates a `.git/` directory in the current folder. This directory IS the Git database. It contains: `HEAD` (pointer to current branch), `objects/` (all blobs, trees, commits), `refs/` (branch and tag pointers), `config` (local configuration), and `index` (staging area — created later on first `git add`). After `git init`, all existing files are in UNTRACKED state — Git is aware they exist but is not managing their versions yet.
-
-### Q3: "What is a bare repository and when would you use it?"
-
-**Model Answer:**
-> A bare repository has no working directory — it contains only the contents that would normally be in `.git/`. You use bare repos as the central remote: when you `git push`, you push to a bare repo. GitHub, GitLab, and Bitbucket internally host bare repositories. You'd set one up on a private server with `git init --bare`. Developers never directly edit files in a bare repo; they clone it, work locally, and push back.
-
-### Q4: "Why does Git embed `user.name` and `user.email` in commits?"
-
-**Model Answer:**
-> They serve as human-readable metadata identifying the author and committer of each commit. They're baked into the commit object hash — changing them retroactively changes the commit SHA. They're NOT authentication credentials; Git authentication is handled separately (SSH keys, tokens, OAuth). The distinction author vs committer matters in open-source: the author is the person who wrote the patch; the committer is the maintainer who applied it.
-
-### Q5: "What is the difference between `git config --local`, `--global`, and `--system`?"
-
-**Model Answer:**
-> These are three scope levels. `--system` applies to all users on the machine (stored in `/etc/gitconfig`). `--global` applies to all repositories for the current user (`~/.gitconfig`). `--local` applies only to the current repository (`.git/config`). The priority order is local > global > system — a local setting always overrides a global one. In practice: use `--global` for personal machines, `--local` when working with multiple Git identities (personal vs work accounts on the same machine).
-
----
-
-## 10. Quick Revision Cheatsheet
-
+**Options & Examples:**
 ```bash
-# ─── VERIFY ────────────────────────────────────────────
-git --version                          # check git is installed
-git config --list --show-origin        # list all config + source files
-
-# ─── CONFIGURE ─────────────────────────────────────────
-git config --global user.name  "Name"
-git config --global user.email "email@example.com"
-git config --global init.defaultBranch main
-git config --global core.editor "code --wait"
-git config --local  alias.st status   # git st → git status
-
-# ─── INITIALISE ────────────────────────────────────────
-git init                               # init new repo in current dir
-git init my-project                    # init into new folder
-git init --bare /srv/repos/proj.git    # bare repo (server-side)
-
-# ─── INSPECT ───────────────────────────────────────────
-git status                             # working tree + staging status
-git log --oneline --graph --all        # visual commit history
-ls -la .git/                           # inspect git internals
-cat .git/HEAD                          # see current branch pointer
-cat .git/config                        # see local config
-```
-
----
-
-## 11. Real-World Workflows
-
-### Workflow A: New Project from Scratch
-
-```bash
-# 1. Create project directory and initialise
-mkdir payment-service && cd payment-service
+# Initialise in current directory
 git init
+
+# Initialise in a new named directory
+git init my-project
+
+# Initialise with specific default branch name
+git init --initial-branch=main
+git init -b main                      # shorthand
+
+# Initialise a bare repo (server-side — no working directory)
+git init --bare /srv/repos/project.git
+
+# Verify initialisation
+ls -la .git/
+
+# Check status immediately after init
+git status
+# On branch main / No commits yet / Untracked files: ...
+```
+
+**Real-world sequence:**
+```bash
+mkdir payment-service && cd payment-service
+git init -b main
 git config --local user.name  "Shreya"
 git config --local user.email "shreya@company.com"
-
-# 2. Create .gitignore before first commit
-echo "target/" >> .gitignore
-echo ".env"   >> .gitignore
-echo "*.class" >> .gitignore
-
-# 3. Initial commit
+echo "target/" > .gitignore
 git add .gitignore
-git commit -m "chore: initialise repo with gitignore"
-
-# 4. Connect to remote
+git commit -m "chore: initialise repo"
 git remote add origin git@github.com:company/payment-service.git
 git push -u origin main
 ```
 
-### Workflow B: Clone Existing Project
+---
 
-```bash
-# Clone via SSH (preferred for teams — no password prompts)
-git clone git@github.com:company/payment-service.git
-cd payment-service
+# 6. git config
 
-# Configure identity if not set globally
-git config --local user.name  "Ankit"
-git config --local user.email "ankit@company.com"
+## What is it?
+`git config` reads and writes configuration values for Git. It controls identity (name/email embedded in commits), editor preference, aliases, pull strategy, and hundreds of other behaviours.
+
+## Why It Matters
+- `user.name` and `user.email` are **baked into every commit's SHA** — wrong identity = wrong attribution in `git blame`, GitHub commit history, and audit logs
+- Configuration is layered — local overrides global overrides system (critical for multi-account machines)
+- Aliases and pull strategies set here have daily productivity impact
+
+## Internal Working
+Three configuration files, each with a scope:
+
+```
+/etc/gitconfig            ← system   (all users, all repos)
+~/.gitconfig              ← global   (current user, all repos)
+.git/config               ← local    (current repo only) ← HIGHEST PRIORITY
 ```
 
-### Workflow C: Multiple GitHub Accounts on One Machine
+Priority: **local > global > system** — lower file always wins.
 
+`user.name` and `user.email` are stored as plain text in the config file and read at commit time. They become part of the commit object:
+```
+author  Shreya <shreya@company.com> 1746000000 +0530
+```
+This string is included in the SHA-1 computation, so changing the config changes future commit SHAs.
+
+## Command Explanation
+
+### Syntax
 ```bash
-# ~/.ssh/config
-Host github-personal
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_rsa_personal
+git config [--system | --global | --local] <key> <value>
+git config [--system | --global | --local] <key>
+git config --list [--show-origin] [--show-scope]
+git config --edit [--system | --global | --local]
+git config --unset <key>
+```
 
-Host github-work
-  HostName github.com
-  User git
-  IdentityFile ~/.ssh/id_rsa_work
+**Identity (required before first commit):**
+```bash
+# Set for all repos on this machine (most common)
+git config --global user.name  "Shreya Jain"
+git config --global user.email "shreya@company.com"
 
-# Clone using alias
-git clone git@github-work:company/repo.git
+# Set only for this repo (overrides global — use for work/personal separation)
+git config --local user.name  "Shreya"
+git config --local user.email "shreya@personal.com"
+```
 
-# Set local config per repo
-git config --local user.email "ankit@company.com"
+**Editor and tools:**
+```bash
+git config --global core.editor "code --wait"          # VS Code
+git config --global core.editor "vim"                  # Vim
+git config --global merge.tool  vscode
+git config --global diff.tool   vscode
+git config --global difftool.vscode.cmd 'code --wait --diff $LOCAL $REMOTE'
+```
+
+**Pull and push strategy:**
+```bash
+git config --global pull.rebase true          # rebase on pull (recommended)
+git config --global pull.ff    only           # fast-forward only (safest)
+git config --global push.default current      # push to same-name remote branch
+git config --global push.autoSetupRemote true # auto-set upstream on first push
+```
+
+**Default branch:**
+```bash
+git config --global init.defaultBranch main
+```
+
+**Aliases:**
+```bash
+git config --global alias.st   "status -sb"
+git config --global alias.co   "checkout"
+git config --global alias.br   "branch -vv"
+git config --global alias.lg   "log --oneline --graph --all --decorate"
+git config --global alias.undo "reset --soft HEAD~1"
+git config --global alias.last "log -1 HEAD --stat"
+
+# Usage:
+git st    # → git status -sb
+git lg    # → visual commit graph
+git undo  # → undo last commit, keep staged
+```
+
+**Inspect configuration:**
+```bash
+git config --list                           # all effective config
+git config --list --show-origin             # with source file
+git config --list --show-origin --show-scope # with scope label
+git config user.name                        # single key value
+git config --global --edit                  # open global config in editor
+cat .git/config                             # raw local config file
+```
+
+**Unset / remove:**
+```bash
+git config --global --unset user.email
+git config --local  --unset-all alias.st    # remove all values for key
 ```
 
 ---
 
-## 12. Troubleshooting Common Setup Issues
+# 7. Interview Questions & Answers
 
-| Problem | Cause | Solution |
-|---|---|---|
-| `fatal: not a git repository` | `git init` not run | Run `git init` in project root |
-| `Author identity unknown` | No user.name/email set | `git config --global user.name "..."` |
-| Commits show wrong author | Local config not set | `git config --local user.name "..."` |
-| `.git` folder not visible | Hidden files not shown | Mac: `Cmd+Shift+.`; Linux: `ls -la` |
-| `git init` on wrong directory | Wrong path | `rm -rf .git` then re-init in correct dir |
-| Line ending issues (Windows) | CRLF vs LF | `git config --global core.autocrlf true` |
+**Q: "What is the difference between Git and GitHub?"**
+> Git is a distributed version control tool that runs locally. GitHub is a cloud hosting platform for Git repositories with collaboration features (PRs, Actions, Issues). Git works without GitHub. They are separate products by separate organisations (Git: the Linux community; GitHub: Microsoft-owned).
+
+**Q: "What happens when you run `git init`?"**
+> Git creates a `.git/` directory containing: `HEAD` (pointing to `refs/heads/main`), empty `objects/` (object store), empty `refs/heads/` and `refs/tags/` (branch/tag pointers), and a default `config` file. All existing files become UNTRACKED — Git is aware they exist but not managing their history. The staging area index does not exist until the first `git add`.
+
+**Q: "What is the difference between `--local`, `--global`, and `--system` in git config?"**
+> Three scope levels with descending priority: `--system` applies to all users on the machine (`/etc/gitconfig`). `--global` applies to all repos for the current user (`~/.gitconfig`). `--local` applies only to the current repository (`.git/config`). Local always overrides global which always overrides system. Use global for your usual identity; use local when working with a different GitHub account on a specific project.
+
+**Q: "Why do commits show the wrong author name even though I set git config globally?"**
+> A `--local` config in that repository is overriding the global setting. Run `git config --list --show-origin` to see which config file each setting comes from. The local `.git/config` takes priority over `~/.gitconfig`. Fix: `git config --local user.name "Correct Name"` in that repo.
+
+**Q: "What is a bare repository and when would you use one?"**
+> A bare repository has no working directory — it contains only the contents that would normally be inside `.git/`. Created with `git init --bare`. Used for server-side repos that act as a shared remote — like what GitHub stores internally. Developers never directly edit files in a bare repo; they clone it, work locally, and push back.
+
+---
+
+# 8. Quick Revision Cheatsheet
+
+```bash
+# ─── VERIFY SETUP ─────────────────────────────────────────
+git --version                                # check git installed
+git config --list --show-origin              # all config + source files
+
+# ─── CONFIGURE IDENTITY ───────────────────────────────────
+git config --global user.name  "Your Name"
+git config --global user.email "you@email.com"
+git config --global init.defaultBranch main
+git config --global pull.rebase true
+git config --global core.editor "code --wait"
+
+# ─── USEFUL ALIASES ───────────────────────────────────────
+git config --global alias.st   "status -sb"
+git config --global alias.lg   "log --oneline --graph --all --decorate"
+git config --global alias.undo "reset --soft HEAD~1"
+
+# ─── INITIALISE ───────────────────────────────────────────
+git init                        # init in current dir
+git init my-project             # init in new dir
+git init --bare /path/repo.git  # bare repo (server-side)
+
+# ─── INSPECT ──────────────────────────────────────────────
+cat .git/HEAD                   # see current branch pointer
+cat .git/config                 # see local config
+ls -la .git/                    # inspect git database structure
+git status                      # working dir + staging state
+
+# ─── SCOPES PRIORITY ──────────────────────────────────────
+# local (.git/config) > global (~/.gitconfig) > system (/etc/gitconfig)
+```
 
 ---
 

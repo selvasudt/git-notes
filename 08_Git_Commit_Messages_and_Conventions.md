@@ -25,7 +25,7 @@
 
 ## 1. What is a Commit Message?
 
-### Definition
+## What is it?
 
 A **commit message** is the human-readable metadata attached to every Git commit. It explains **what** changed and **why** — not **how** (the diff shows the how).
 
@@ -40,6 +40,11 @@ A **commit message** is the human-readable metadata attached to every Git commit
 ---
 
 ## 2. Why It Matters
+
+## What is it?
+Commit message quality directly determines whether Git history is an asset or a liability.
+
+## Why It Matters
 
 ### The Real Cost of Bad Commit Messages
 
@@ -78,6 +83,14 @@ Now you can:
 ---
 
 ## 3. Internal Working — How Git Stores Messages
+
+## What is it?
+The commit message is embedded inside the commit object and contributes to the commit SHA.
+
+## Why It Matters
+Changing a message changes the SHA — amending requires force-push on shared branches.
+
+## Internal Working
 
 ### Commit Object Structure
 
@@ -119,6 +132,23 @@ git cat-file -p HEAD
 ---
 
 ## 4. Anatomy of a Good Commit Message
+
+## What is it?
+The three-part structure (subject + body + footer) is the universal standard for professional commit messages.
+
+## Why It Matters
+Proper structure enables automated changelog generation, searchability, and clear code review context.
+
+## Internal Working
+Git uses the first line (before first blank line) as the commit subject — shown in `git log --oneline`. Everything after the blank line is the body, shown in `git show`.
+
+## Command Explanation
+
+### Syntax
+```bash
+git commit -m "subject"
+git commit  # opens editor for full subject+body+footer
+```
 
 ### The Three-Part Structure
 
@@ -170,6 +200,22 @@ Reviewed-by: Shreya <shreya@company.com>
 ---
 
 ## 5. Conventional Commits Specification
+
+## What is it?
+Conventional Commits is a specification that adds machine-readable structure to commit messages, enabling automated versioning and changelog generation.
+
+## Why It Matters
+Tools like `semantic-release` read commit types to auto-determine the next semantic version (feat→minor, fix→patch, BREAKING→major) and generate changelogs.
+
+## Internal Working
+The commit message is parsed by tools like `commitlint` and `semantic-release`. The type determines SemVer bump; the scope adds context; BREAKING CHANGE in footer triggers major bump.
+
+## Command Explanation
+
+### Syntax
+```bash
+git commit -m "<type>(<scope>): <description>"
+```
 
 ### Overview
 
@@ -223,6 +269,23 @@ Migration: PaymentService.processPayment(amount)
 ---
 
 ## 6. The 7 Rules of a Great Commit Message
+
+## What is it?
+Seven universally accepted rules (based on Chris Beams' guidelines) for writing professional commit messages.
+
+## Why It Matters
+Following these rules makes `git log` readable, enables tooling, and respects your teammates' (and future self's) time.
+
+## Internal Working
+Git itself enforces no message format — all enforcement is via `commit-msg` hooks, `commitlint`, or CI validation.
+
+## Command Explanation
+
+### Syntax
+```bash
+git commit -m "subject"            # inline (subject only)
+git commit                         # opens editor (subject + body + footer)
+```
 
 Based on Chris Beams' widely-cited guidelines:
 
@@ -326,6 +389,23 @@ payment errors to near zero.
 
 ## 7. Bad vs Good — Real Examples
 
+## What is it?
+Concrete before/after examples of commit messages at bad, mediocre, and professional quality levels.
+
+## Why It Matters
+Seeing the contrast makes the rules concrete and actionable.
+
+## Internal Working
+N/A — examples only.
+
+## Command Explanation
+
+### Syntax
+```bash
+git log --oneline -10    # see how messages appear in history
+git show HEAD            # see full message + diff
+```
+
 ### Example 1: Bug Fix
 
 ```bash
@@ -399,6 +479,23 @@ interactions to a dedicated PaymentRepository interface.
 
 ## 8. Commit Message Templates
 
+## What is it?
+A commit template is a default message shown in the editor every time you run `git commit` — a prompt reminding developers of the expected format.
+
+## Why It Matters
+Reduces friction for adopting message standards — developers see the format on every commit without memorising it.
+
+## Internal Working
+Git reads `commit.template` config key, finds the file, and pre-populates the commit editor buffer with its contents.
+
+## Command Explanation
+
+### Syntax
+```bash
+git config --global commit.template ~/.gitmessage
+git config --local  commit.template .gitmessage
+```
+
 ### Setting a Global Template
 
 ```bash
@@ -447,6 +544,23 @@ git config --local commit.template .gitmessage
 ---
 
 ## 9. Enforcing Standards with Hooks
+
+## What is it?
+A `commit-msg` hook is a shell script in `.git/hooks/commit-msg` that Git runs after you write a commit message — it can validate the format and abort the commit if the message is non-compliant.
+
+## Why It Matters
+Local enforcement ensures bad messages never enter the repo. Combined with CI-level `commitlint`, enforcement is complete and cannot be bypassed.
+
+## Internal Working
+Git passes the commit message FILE PATH as the first argument to `commit-msg`. The hook reads the file, validates the content, and exits 0 (pass) or non-zero (fail/abort commit).
+
+## Command Explanation
+
+### Syntax
+```bash
+chmod +x .git/hooks/commit-msg
+git config core.hooksPath scripts/git-hooks/
+```
 
 ### `commit-msg` Hook — Validate Conventional Commits
 
@@ -514,6 +628,24 @@ npx husky add .husky/commit-msg 'npx --no -- commitlint --edit "$1"'
 
 ## 10. Automated Changelog & Versioning
 
+## What is it?
+`semantic-release` and `git-cliff` are tools that read Conventional Commits history to automatically determine the next version number and generate `CHANGELOG.md`.
+
+## Why It Matters
+Eliminates manual versioning decisions — every release is semantically correct based on actual commit types. Reduces human error and debate over version numbers.
+
+## Internal Working
+These tools run `git log` to read commit messages since the last tag. They parse commit types (feat→minor bump, fix→patch bump, BREAKING CHANGE→major bump), compute the next version, create a tag, and generate changelog text from the commit messages.
+
+## Command Explanation
+
+### Syntax
+```bash
+npx semantic-release               # automated release in CI
+git cliff --latest                 # generate changelog since last tag
+git cliff v2.0.0..v2.1.0          # between specific tags
+```
+
 ### `standard-version` / `semantic-release`
 
 These tools read your Conventional Commits history and:
@@ -568,6 +700,24 @@ npx semantic-release
 ---
 
 ## 11. Amending & Editing Messages
+
+## What is it?
+`git commit --amend` replaces the last commit (including its message) with a new commit. Interactive rebase (`rebase -i`) edits older commit messages.
+
+## Why It Matters
+Fixing bad messages before they are pushed to shared branches is important — once pushed, amending rewrites SHAs and requires force-push.
+
+## Internal Working
+`git commit --amend` creates a BRAND NEW commit object with a new SHA (even if only the message changed) and updates the branch pointer. The old commit becomes unreferenced and is eventually GC'd.
+
+## Command Explanation
+
+### Syntax
+```bash
+git commit --amend -m "new message"
+git commit --amend --no-edit
+git rebase -i HEAD~n    # reword older commits
+```
 
 ### Amend Last Commit Message
 

@@ -1,459 +1,501 @@
 # 07 · Git Interview Master Sheet
 
 > **Audience:** Senior SWE · Backend Engineer · DevOps · Tech Lead — Final interview prep  
-> **Prerequisite:** Files 01–06 of this series
+> **Series:** Git Knowledge Base — File 7 of 12
 
 ---
 
 ## Table of Contents
-
-1. [The 10 Concepts Every Senior Engineer Must Know](#1-the-10-concepts-every-senior-engineer-must-know)
-2. [Concept Map — Everything in One View](#2-concept-map--everything-in-one-view)
-3. [Interview Questions by Seniority Level](#3-interview-questions-by-seniority-level)
+1. [The 10 Must-Know Concepts](#1-the-10-must-know-concepts)
+2. [Internals — 60-Second Summary](#2-internals--60-second-summary)
+3. [Interview Questions by Level](#3-interview-questions-by-level)
 4. [Scenario-Based Questions](#4-scenario-based-questions)
-5. [DevOps-Specific Questions](#5-devops-specific-questions)
-6. [Tech Lead / Architecture Questions](#6-tech-lead--architecture-questions)
-7. [Common Traps & Misconceptions](#7-common-traps--misconceptions)
-8. [Command Decision Trees](#8-command-decision-trees)
-9. [Git Internals — 60-Second Summary](#9-git-internals--60-second-summary)
-10. [One-Page Cheatsheet](#10-one-page-cheatsheet)
-11. [Topics to Study Beyond This Series](#11-topics-to-study-beyond-this-series)
+5. [Command Decision Trees](#5-command-decision-trees)
+6. [Common Traps & Misconceptions](#6-common-traps--misconceptions)
+7. [One-Page Cheatsheet](#7-one-page-cheatsheet)
+8. [Topics to Study Beyond This Series](#8-topics-to-study-beyond-this-series)
 
 ---
 
-## 1. The 10 Concepts Every Senior Engineer Must Know
+# 1. The 10 Must-Know Concepts
 
-These are non-negotiable for any senior/lead interview. Master the **what, why, and internal mechanism** for each.
+## What is it?
+The ten Git concepts that appear most frequently in senior and tech lead interviews, each requiring knowledge of the **what, why, and internal mechanism**.
 
-| # | Concept | Must Know |
-|---|---|---|
-| 1 | **Git Object Model** | Blob, Tree, Commit, Tag — SHA-1 content-addressed storage |
-| 2 | **The Three Areas** | Working Directory, Staging Area (Index), Local Repository |
-| 3 | **File Lifecycle** | Untracked → Staged → Unmodified → Modified |
-| 4 | **Merge vs Rebase** | When to use each; the golden rule of rebase |
-| 5 | **Branching Strategies** | Git Flow, GitHub Flow, Trunk-Based — pros/cons |
+## Why It Matters
+Interviewers distinguish seniors from juniors by depth: a junior knows commands, a senior knows internals and tradeoffs.
+
+## Internal Working
+*(Refer to individual topic files for full internal working of each concept)*
+
+## Command Explanation
+
+### Syntax
+*(Refer to individual topic files — this section consolidates the concepts)*
+
+| # | Concept | Depth Required |
+|---|---------|---------------|
+| 1 | **Git Object Model** | Blob, Tree, Commit, Tag — SHA-1, content-addressable storage |
+| 2 | **The Three Areas** | Working Directory, Staging Area (index), Local Repository |
+| 3 | **File Lifecycle** | Untracked → Staged → Unmodified → Modified + all transitions |
+| 4 | **Merge vs Rebase** | When to use each; golden rule; DAG implications |
+| 5 | **Branching Strategies** | Git Flow vs GitHub Flow vs Trunk-Based — pros/cons/when |
 | 6 | **HEAD and References** | Symbolic refs, detached HEAD, remote-tracking refs |
-| 7 | **Reflog** | Recovery tool; what it records; 90-day window |
-| 8 | **Force Push Safety** | `--force-with-lease` vs `--force`; when to use |
-| 9 | **Conflict Resolution** | Three-way merge, stage numbers, resolution strategies |
-| 10 | **History Rewriting Safety** | When it's safe; shared branch golden rules |
+| 7 | **Reflog** | Recovery tool; 90-day window; what it records |
+| 8 | **Force Push Safety** | `--force-with-lease` vs `--force`; when each is appropriate |
+| 9 | **Conflict Resolution** | Three-way merge; stage numbers; `--ours` vs `--theirs` |
+| 10 | **History Rewriting Safety** | When safe; shared branch golden rules; filter-repo |
 
 ---
 
-## 2. Concept Map — Everything in One View
+# 2. Internals — 60-Second Summary
 
+## What is it?
+A rapid-fire mental model for explaining Git internals in any interview context.
+
+## Why It Matters
+Interviewers at senior level will ask "explain how Git works internally" — this is the model answer structure.
+
+## Internal Working
 ```
-                         GIT KNOWLEDGE MAP
-                         ─────────────────
+Git = content-addressable object store in .git/objects/
 
-INTERNALS                          WORKFLOW
-─────────                          ────────
-Object Types                       Daily: add → commit → push
-  ├── Blob (file content)          Branching: switch -c → develop → PR
-  ├── Tree (directory)             Emergency: stash → fix → pop
-  ├── Commit (snapshot)            Release: tag -a → push --tags
-  └── Tag (named commit)
-                                   COLLABORATION
-Storage                            ─────────────
-  ├── .git/objects/ (blobs,trees)  GitHub Flow: branch → PR → merge
-  ├── .git/index (staging area)    Fork Flow: fork → upstream → PR
-  ├── .git/refs/ (branches, tags)  Code Review: atomic PRs, good messages
-  └── .git/HEAD (current ref)
-                                   INTEGRATION
-File States                        ───────────
-  Untracked                        Merge: three-way, preserves history
-  ↓ git add                        Rebase: linear, rewrites SHAs
-  Staged                           Cherry-pick: selective copy
-  ↓ git commit                     Squash: combine commits
-  Unmodified
-  ↓ edit                           RECOVERY
-  Modified                         ────────
-  ↓ git add                        Reflog: 90 days of all movements
-  Staged                           git reset: soft/mixed/hard
-                                   git revert: safe undo for shared
-SHA Mechanics                      git restore: file-level recovery
-  SHA-1(type+size+content)
-  → content-addressable            HISTORY SURGERY
-  → deduplication                  ──────────────
-  → integrity                      bisect: binary search
-  → immutability                   blame: line authorship
-                                   log -S: pickaxe search
-DAG                                filter-repo: rewrite history
-  Commits form directed            interactive rebase: clean up
-  acyclic graph
-  Branches = pointers              TEAM POLICIES
-  HEAD = current pointer           ───────────────
-                                   Branch protection rules
-                                   Required reviews
-                                   Status checks (CI)
-                                   Hooks: pre-commit, commit-msg
+FOUR OBJECT TYPES:
+  blob   = file content only (no name, no path)
+  tree   = directory (maps names + permissions → blob/tree SHAs)
+  commit = snapshot (root tree SHA + parent SHA + author + message)
+  tag    = named commit reference with metadata
+
+SHA-1(object_type + " " + size + "\0" + content) → 40-char hex address
+  → identical content = identical SHA = automatic deduplication
+  → any change = different SHA = immutability + integrity
+
+THREE AREAS:
+  Working Directory → .git/index (staging) → .git/objects/ (repository)
+  git add:    blob written to objects/, filepath→SHA added to index
+  git commit: trees built from index, commit object created, branch pointer advances
+
+DAG (Directed Acyclic Graph):
+  Commits form a DAG — each points to parent(s)
+  Branch = 41-byte file containing one commit SHA (O(1) to create)
+  HEAD   = pointer to current branch (or detached = direct SHA)
+  Merge  = new commit with TWO parents
+  Rebase = replay commits on new base (new SHAs, same changes)
+
+RECOVERY:
+  reflog = 90-day log of all HEAD movements → almost nothing is permanently lost
 ```
 
----
+## Command Explanation
 
-## 3. Interview Questions by Seniority Level
-
-### Junior Level (1-2 years)
-
-| Question | Key Points |
-|---|---|
-| What is Git? | DVCS, tracks changes, local full history |
-| What is `git init`? | Creates `.git/`, initialises empty repo |
-| Difference: `git add` vs `git commit` | Stage vs permanently record |
-| What is a branch? | Lightweight pointer to a commit |
-| How do you undo the last commit? | `git reset --soft HEAD~1` |
-| What is `.gitignore`? | Patterns for files Git should not track |
-| What is `git clone`? | Download entire repo (all history) |
-| What is a merge conflict? | Both branches edited same lines |
-
-### Mid-Level (2-5 years)
-
-| Question | Key Points |
-|---|---|
-| Merge vs Rebase? | Preserves vs rewrites history; golden rule |
-| What is the staging area? | Draft area between working dir and commits |
-| `git reset` modes? | soft/mixed/hard — what each preserves |
-| `git revert` vs `git reset`? | Safe (new commit) vs destructive (rewrite) |
-| What is `git stash`? | Temporarily save dirty state |
-| What is detached HEAD? | HEAD points to commit, not branch |
-| What is `--force-with-lease`? | Safer force push — checks remote state first |
-| What is interactive rebase? | Rewrite local history: squash, reorder, drop |
-
-### Senior Level (5+ years)
-
-| Question | Key Points |
-|---|---|
-| Explain Git's internal object model | Blob, Tree, Commit, Tag; SHA-1; `.git/objects/` |
-| How does a commit SHA change? | Parent SHA, author, timestamp, tree SHA all contribute |
-| Branching strategies for large teams? | Trunk-Based vs Git Flow — context matters |
-| How to find a performance regression? | `git bisect run <script>` |
-| How do you handle a compromised secret in history? | Rotate first; filter-repo; force push; re-clone team |
-| DAG and its implications? | Merge finds LCA; rebase replays; cherry-pick copies |
-| Git hooks for team enforcement? | Pre-commit, commit-msg, pre-push; sharing via hooksPath or Husky |
-| Git in a monorepo? | Sparse checkout, shallow clone, partial clone |
-
-### Tech Lead / Architect Level
-
-| Question | Key Points |
-|---|---|
-| Design a branching strategy for a 50-person team? | Assess release model, deployment frequency, team maturity |
-| How to migrate SVN to Git? | `git svn clone`, preserve history, retrain team |
-| Git at scale — monorepo challenges? | Partial clone, sparse checkout, CODEOWNERS, virtual filesystems |
-| How to enforce commit quality across the org? | Shared hooks, pre-receive server hooks, PR templates, CI checks |
-| Disaster recovery with Git? | Mirror repos, bare clones, reflog, ORIG_HEAD |
+### Syntax
+```bash
+# Verify your understanding of internals
+git cat-file -p HEAD              # see raw commit object
+git cat-file -p HEAD^{tree}       # see root tree
+git ls-files --stage              # see index contents
+cat .git/HEAD                     # see HEAD pointer
+git log --oneline --graph --all   # see the DAG
+```
 
 ---
 
-## 4. Scenario-Based Questions
+# 3. Interview Questions by Level
 
-### Scenario 1: "You pushed a bug to main. Production is down. What do you do?"
+## What is it?
+Categorised questions with model answers for Junior, Mid-Level, Senior, and Tech Lead interview levels.
 
-**Model Answer:**
-> First, assess: is this a recent commit that can be reverted cleanly, or a complex change? If recent and cleanly isolated: `git revert <bad-commit-sha>` — this creates a new commit undoing the change, is safe on shared branches, and preserves full history. Commit with a clear message ("revert: payment NPE fix rollback — fixes PROD-521"), push, trigger deployment. If revert is complex or the build takes too long, consider deploying the previous tagged release directly from CI/CD — faster than fixing forward. After recovery: conduct a blameless post-mortem, improve testing to prevent recurrence.
+## Why It Matters
+Knowing the level-appropriate depth prevents over-explaining to juniors or under-explaining to seniors.
 
-### Scenario 2: "A developer says their local main is 50 commits behind origin/main. How do they catch up?"
+## Internal Working
+*(No Git internals — this section is question/answer pairs)*
 
-**Model Answer:**
-> `git fetch origin` to download the latest remote changes (never modifies local branches). Then `git log main..origin/main` to see what commits are coming. Then `git rebase origin/main` (preferred for linear history) or `git merge origin/main`. If their local main has diverged (they committed locally to main — which they shouldn't have), `git pull --rebase` handles it. If they want to cleanly align with remote: `git reset --hard origin/main` (discards any local commits). After this, they should create feature branches for new work rather than committing directly to local main.
+## Command Explanation
 
-### Scenario 3: "A developer accidentally force-pushed and deleted a colleague's commits from the shared feature branch. Recovery?"
+### Syntax
+*(Model answers reference commands from previous files)*
 
-**Model Answer:**
-> The colleague still has the commits locally. Immediate steps: don't panic, don't pull. The colleague should run `git push --force-with-lease origin feature/shared` to restore their commits (if no one has pulled the broken state yet). If others have pulled the bad state: colleague pushes their version, affected devs run `git fetch; git reset --hard origin/feature/shared`. For future prevention: enable branch protection rules on GitHub to require pull requests and disable force pushes. Educate the team: never `--force` on shared branches; use `--force-with-lease` only on your own branches.
+**JUNIOR LEVEL (1–2 years):**
 
-### Scenario 4: "You want to apply only one specific bug fix from a feature branch (which isn't ready to merge) to main for a hotfix. How?"
+Q: "What is Git and what is it used for?"
+> Git is a distributed version control system that tracks changes to files over time. It lets multiple developers collaborate on the same codebase by providing branching, merging, history tracking, and the ability to revert to any past state.
 
-**Model Answer:**
-> `git cherry-pick <commit-sha>` copies the specific fix commit onto main. First, find the commit: `git log feature/payment --oneline` to identify the exact fix SHA. Then on main: `git cherry-pick abc123`. If there are conflicts, resolve them, `git add`, `git cherry-pick --continue`. The result is a new commit on main with the same changes but a different SHA. I'd note in the commit message that this is a cherry-pick from the feature branch (and include the original SHA for traceability). The feature branch keeps the original commit for when it eventually merges.
+Q: "What is the difference between `git add` and `git commit`?"
+> `git add` moves changes to the Staging Area (index) — it prepares changes to be committed. `git commit` permanently records the staged snapshot into the Local Repository. Nothing is committed until you explicitly run `git commit`.
 
-### Scenario 5: "The team is having too many merge conflicts. What changes would you propose?"
-
-**Model Answer:**
-> Frequent conflicts signal process issues. I'd investigate: (1) **Long-lived feature branches** — branches open for 2+ weeks constantly diverge from main. Solution: smaller PRs, feature flags to merge partial work. (2) **Poor code ownership** — multiple people editing the same files. Solution: clearer module boundaries, CODEOWNERS file, avoid cross-cutting changes. (3) **Infrequent syncing** — developers don't pull from main regularly. Solution: enforce `git pull --rebase` from main daily; use `git config pull.rebase true`. (4) **No rebase before PR** — stale PRs conflict on merge. Solution: require branches to be up-to-date before merge (GitHub "Require branches to be up to date" setting). (5) **Monolithic changes** — massive refactors conflict with everything. Solution: parallel refactoring techniques, strangler fig pattern.
-
----
-
-## 5. DevOps-Specific Questions
-
-### Q: "How does Git fit into a CI/CD pipeline?"
-
-**Model Answer:**
-> Git is the trigger for the entire pipeline. A `git push` to a branch fires a webhook to the CI server (GitHub Actions, Jenkins, GitLab CI). The CI system: (1) does a shallow clone (`--depth 1`) for speed, (2) runs the build, (3) runs tests, (4) runs security/lint scans, (5) reports status back to GitHub (commit status API). For trunk-based teams, every push to main triggers deployment to staging. A `git tag -a v2.1.0` triggers a release pipeline. Pull requests have their own CI run — only PRs with passing CI and required reviews can merge (enforced via branch protection rules).
-
-### Q: "How do you version releases with Git?"
-
-**Model Answer:**
-> Semantic versioning with annotated tags: `git tag -a v<MAJOR>.<MINOR>.<PATCH> -m "Release message"`. Major = breaking change, Minor = backward-compatible feature, Patch = bug fix. CI/CD reads the tag and uses it as the build version. `git describe --tags` generates version strings like `v1.2.3-14-gabc1234` (14 commits after v1.2.3). Pre-release versions use suffixes: `v2.0.0-rc.1`, `v2.0.0-beta.1`. For automated version bumping, tools like `semantic-release` parse Conventional Commits to automatically determine and apply the next version number and generate changelogs.
-
-### Q: "How do you handle database migrations with Git branches?"
-
-**Model Answer:**
-> Database migrations are directional and often irreversible — they need special handling. Approaches: (1) **Sequential numbered migrations** — `V001__create_payment_table.sql`, `V002__add_retry_count.sql`. Tool like Flyway/Liquibase applies them in order. Migrations are committed to the repo with the feature they support. (2) **Branch conflicts** — two developers both create `V003__*.sql`. Solution: migration numbering based on timestamp (`V20260610143022__add_index.sql`) to avoid clashes. (3) **Rollback strategy** — design all migrations with a corresponding rollback script; Liquibase supports rollback natively. (4) **Blue-green deployments** — run database migrations separately from code deploys; ensure backward compatibility for the deployment window.
-
-### Q: "What is sparse checkout and when would you use it?"
-
-**Model Answer:**
-> Sparse checkout lets you check out only a subset of a repository's files — useful in monorepos where you only need a specific service or module. `git sparse-checkout init --cone` then `git sparse-checkout set services/payment` checks out only the payment service directory. Combined with shallow clones, this dramatically reduces CI/CD checkout time for large monorepos. Also useful for large repos with generated files or build artifacts in specific directories you never need to modify locally.
+Q: "How do you undo the last commit without losing your changes?"
+> `git reset --soft HEAD~1` — this moves the branch pointer back one commit but keeps all changes staged in the index.
 
 ---
 
-## 6. Tech Lead / Architecture Questions
+**MID-LEVEL (2–5 years):**
 
-### Q: "How would you onboard a 10-person team from SVN to Git?"
+Q: "What is the difference between merge and rebase?"
+> Merge creates a merge commit with two parents, preserving the full non-linear branch history. Rebase replays commits on a new base, rewriting their SHAs to produce a linear history. Merge is safe on shared branches. Rebase must only be used on local/private branches because rewriting SHAs breaks history for teammates who already have those commits.
 
-**Model Answer:**
-> Key phases: (1) **Migration** — use `git svn clone` to import SVN history into Git, preserving all commits with authors/timestamps. Set up remote (GitHub/GitLab). (2) **Branching strategy decision** — for a team new to Git, GitHub Flow is simpler than Git Flow. Define branch naming conventions (feature/, hotfix/, release/). (3) **Training** — focus on mental model changes: local commits are free (no server needed), branches are cheap, commit often, push/PR when ready. Common SVN habits to unlearn: committing directly to trunk, updating before every commit, fear of branching. (4) **Tooling** — configure IDE Git integration, set up global .gitignore, install Git Credential Manager. (5) **Enforcement** — branch protection rules, commit message standards, PR templates. (6) **Gradual rollout** — one team first, then organisation-wide.
+Q: "What is `git reset --soft`, `--mixed`, and `--hard`?"
+> All three move the branch pointer backwards. `--soft` keeps changes staged. `--mixed` (default) keeps changes unstaged in working directory. `--hard` discards all changes in both index and working directory. Use `--hard` with extreme caution — only recoverable via reflog.
 
-### Q: "Design a Git strategy for a SaaS product that needs to support multiple enterprise customers on different versions."
-
-**Model Answer:**
-> This requires maintaining multiple stable release lines simultaneously — Git Flow with long-lived release branches is appropriate here. Structure: `main` as the source of truth with all features. `release/v2.x` for major version lines — this branch receives only bug fixes (cherry-picked from main or hotfix branches). Each enterprise customer is pinned to a `release/v2.x` branch. New features land in main, stabilise, then release/v3.x is cut. Hotfixes: fix in the relevant `release/vX.x` branch, then cherry-pick up to main. Tagging: `v2.3.1-enterprise` for specific enterprise releases. CI/CD: each release branch has its own deployment pipeline. The trade-off is significant maintenance overhead — consider whether feature flags plus single-version SaaS is achievable instead.
-
-### Q: "What is the CODEOWNERS file and how does it support team development?"
-
-**Model Answer:**
-> `CODEOWNERS` is a GitHub/GitLab feature where you define which team or individual owns which parts of the codebase. Example: `src/payment/ @payment-team`, `*.md @docs-team`. When a PR touches files in a CODEOWNERS path, the listed owners are automatically requested as reviewers. Combined with branch protection rules requiring CODEOWNERS review, this ensures the right experts review changes to critical subsystems. It scales code review responsibility — the payment team reviews payment code, the security team reviews auth code — without requiring team leads to manually assign every PR. It also serves as living documentation of ownership.
+Q: "What is the staging area and why does it exist?"
+> The staging area (`.git/index`) is an intermediate area between the Working Directory and Local Repository. It lets you craft atomic, precise commits — stage some files but not others, or stage specific lines within a file using `git add -p`. This enables clean single-purpose commits even when your working directory has multiple unrelated changes.
 
 ---
 
-## 7. Common Traps & Misconceptions
+**SENIOR LEVEL (5+ years):**
 
-### Trap 1: "Git and GitHub are the same thing."
-> Git is the version control tool (CLI). GitHub is a hosting platform and collaboration service. Alternatives to GitHub: GitLab, Bitbucket, Gitea.
+Q: "Explain Git's internal object model."
+> Git stores everything as one of four object types in `.git/objects/`: blob (file content only), tree (directory — maps names to blob/tree SHAs), commit (snapshot pointing to root tree + parent commit + metadata), and tag (named annotated reference). Each is identified by SHA-1 of its content — content-addressable storage. Identical content → identical SHA → deduplication. Any change → different SHA → immutability and integrity detection.
 
-### Trap 2: "Deleting a branch deletes its commits."
-> Branches are pointers. Deleting a branch removes the pointer; the commits remain in `.git/objects/` until garbage collected (after 30-90 days). Recovery via `git reflog`.
+Q: "Why does rebasing create new commits even when the code changes are identical?"
+> A commit's SHA is computed from ALL its content including the parent SHA. When you rebase, commits are replayed onto a new base — the parent SHA changes. Different parent → different commit content → different SHA. The code diff may be identical but the commit IS a different object.
 
-### Trap 3: "`git pull` is safe to run anytime."
-> `git pull` = `git fetch` + `git merge`. It can create unwanted merge commits. Use `git pull --rebase` or `git fetch` + explicit rebase/merge.
-
-### Trap 4: "Rebase is always better than merge."
-> Rebase rewrites history. On shared branches this breaks teammates' histories. Rule: rebase only local/private commits; merge to integrate into shared branches.
-
-### Trap 5: "`git reset --hard` is recoverable."
-> Mostly true — via reflog — but dangerous. Commits not in any branch and not in reflog (older than expiry) are permanently lost after `git gc`.
-
-### Trap 6: "Git stores diffs between commits."
-> Git stores **snapshots** (complete file content as blobs). Efficiency comes from re-using identical blobs across commits, not from storing diffs. (Pack files do use delta compression, but this is a storage optimisation, not the logical model.)
-
-### Trap 7: "`git commit -a` stages everything."
-> `git commit -a` stages only **tracked modified/deleted** files. It does NOT stage new untracked files. You still need `git add` for new files.
-
-### Trap 8: "Force push is always bad."
-> Force push is appropriate on your own private feature branches after rebasing. It's dangerous on shared branches. Use `--force-with-lease` instead of `--force` for added safety.
-
-### Trap 9: "The staging area is just a temporary copy."
-> The staging area (`.git/index`) is a precise specification of the next commit. You can have a file simultaneously modified in working directory and staged with older content — `git commit` only takes the staged version.
-
-### Trap 10: "A shallow clone is incomplete."
-> A shallow clone has full content for the checked-out branch at the requested depth — all files are present and correct. What's missing is deeper commit history. For building software, shallow clones are completely functional.
+Q: "How would you find a performance regression introduced sometime in the last 500 commits?"
+> `git bisect run <benchmark-script>`. Mark current as bad, last known-good tag as good. Write a script that exits 0 if performance is acceptable, non-zero if degraded. `git bisect run ./benchmark.sh` automatically binary-searches — ~9 commits tested for 500 history. Git announces the first bad commit.
 
 ---
 
-## 8. Command Decision Trees
+**TECH LEAD LEVEL:**
 
-### "I want to undo something. Which command?"
+Q: "What branching strategy would you recommend for a 50-engineer team doing 10 deploys per day?"
+> Trunk-Based Development with feature flags. At 50 engineers with 10 daily deploys, any long-lived branches create conflict overhead and slow delivery. Short-lived feature branches (< 2 days) merge to main behind feature flags. CI must be fast and reliable — every merge to main is deployable. Branch protection enforces: 2 reviewers, all CI checks pass, CODEOWNERS approval for domain-critical paths.
 
+Q: "How do you handle a compromised secret in Git history?"
+> Immediate: rotate/revoke the credential — assume compromised. Git cleanup: `git filter-repo --path secrets.env --invert-paths`, force-push all branches/tags, notify all teammates to re-clone, GitHub support cache purge for public repos. Prevention: add to `.gitignore`, add pre-commit hook and CI secret scanning (truffleHog), migrate to a secrets manager (Vault, AWS Secrets Manager).
+
+---
+
+# 4. Scenario-Based Questions
+
+## What is it?
+Real-world incident and problem scenarios that test practical Git judgment, not just command knowledge.
+
+## Why It Matters
+Senior interviews favor scenario questions because they reveal actual decision-making process, not memorized answers.
+
+## Internal Working
+*(No Git internals — scenario analysis)*
+
+## Command Explanation
+
+### Syntax
+*(Commands vary per scenario — shown inline)*
+
+**Scenario 1: "You pushed a bug to main. Production is down."**
+```bash
+# Option A: Revert (SAFE — new commit, history preserved)
+git revert <bad-commit-sha>       # creates undo commit
+git push origin main
+# → tag + redeploy
+
+# Option B: Deploy previous tag (fastest)
+# Trigger CI/CD to deploy previous release tag — no git needed
+
+# Option C: Reset main (LAST RESORT — notify team immediately)
+git reset --hard v2.0.9
+git push --force-with-lease origin main
+# Everyone must: git fetch && git reset --hard origin/main
+```
+
+**Scenario 2: "Developer accidentally deleted a branch with 2 weeks of unmerged work."**
+```bash
+git reflog --all | grep "feature/big-feature"
+# xyz789 refs/heads/feature/big-feature@{0}: commit: last commit
+
+git switch -c feature/big-feature xyz789    # recreate branch ✓
+```
+
+**Scenario 3: "Two developers edited the same file — merge conflict in CI."**
+```bash
+git fetch origin
+git rebase origin/main          # surface conflicts locally
+# resolve conflicts per commit
+git add <resolved-files>
+git rebase --continue
+git push --force-with-lease     # update PR branch
+# → CI reruns on resolved branch
+```
+
+**Scenario 4: "A 3-month-old feature branch has 200 WIP commits. How to open a clean PR?"**
+```bash
+git fetch origin
+git rebase -i origin/main       # rebase onto current main first
+# In editor: fixup all WIP commits into logical atomic commits
+# Each commit = one concern: feat, test, docs, config
+git push --force-with-lease origin feature/big-feature
+# → Open PR with clean, reviewable commits
+```
+
+---
+
+# 5. Command Decision Trees
+
+## What is it?
+Decision flowcharts for the most common Git dilemmas: "I want to undo something" and "I want to integrate changes."
+
+## Why It Matters
+Interviewers often present "what would you do if..." scenarios — decision trees make the answer instant and systematic.
+
+## Internal Working
+*(No internals — decision logic)*
+
+## Command Explanation
+
+### Syntax
+
+**"I want to undo something:"**
 ```
 What do I want to undo?
 │
-├── Unstage a file (keep changes in working dir)
+├── Unstage a file (keep working dir changes)
 │   └── git restore --staged <file>
 │
-├── Discard working directory changes (dangerous — cannot recover)
+├── Discard working dir changes for a file ⚠️
 │   └── git restore <file>
 │
-├── Undo last commit (keep changes)
-│   ├── Keep staged?  → git reset --soft HEAD~1
-│   └── Keep unstaged? → git reset --mixed HEAD~1 (default)
+├── Undo last commit — keep staged
+│   └── git reset --soft HEAD~1
 │
-├── Undo last commit (discard changes) ⚠️
+├── Undo last commit — keep unstaged
+│   └── git reset --mixed HEAD~1
+│
+├── Undo last commit — DISCARD ALL ⚠️
 │   └── git reset --hard HEAD~1
 │
-├── Undo a pushed commit (safe)
-│   └── git revert <sha>          ← creates new undo commit
+├── Undo a pushed commit (SAFE for shared branches)
+│   └── git revert <sha>
 │
-└── Recover something I thought was lost
+└── Recover something "lost"
     └── git reflog → git reset --hard <sha>
 ```
 
-### "I want to integrate changes from another branch."
-
+**"I want to integrate changes from another branch:"**
 ```
-Which branch is the target?
+Target branch is...
 │
-├── Shared branch (main, develop)
-│   ├── Their feature → ours?     → git merge feature/name (via PR)
-│   └── Need specific commit only? → git cherry-pick <sha>
+├── Shared (main, develop) ← NEVER rebase
+│   ├── Their feature → us  → git merge feature/name (via PR)
+│   └── Need specific commit → git cherry-pick <sha>
 │
 └── My private feature branch
-    ├── Want linear history?       → git rebase main
-    ├── Want to squash my WIPs?   → git rebase -i HEAD~n
-    └── Want to sync with remote? → git pull --rebase
-```
-
-### "I want to view history."
-
-```
-What do I want to see?
-│
-├── All commits visually          → git log --oneline --graph --all --decorate
-├── Commits by author             → git log --author="name"
-├── Commits touching a file       → git log -- path/to/file
-├── Who changed this line?        → git blame src/File.java
-├── Which commit added this code? → git log -S "code string"
-├── Find first bad commit         → git bisect start/bad/good/run
-└── My recent HEAD movements      → git reflog
+    ├── Want linear history?    → git rebase main
+    ├── Want to clean WIP commits? → git rebase -i HEAD~n
+    └── Want to sync with remote?  → git pull --rebase
 ```
 
 ---
 
-## 9. Git Internals — 60-Second Summary
+# 6. Common Traps & Misconceptions
 
-> Use this as a rapid-fire response to "Explain how Git works internally."
+## What is it?
+The most frequently wrong answers and misunderstandings seen in Git interviews and on teams.
 
-**Git is a content-addressable object store.** Every piece of data is stored as one of four object types in `.git/objects/`, each identified by a SHA-1 hash of its content.
+## Why It Matters
+Knowing the traps prevents you from saying something wrong in an interview or on the job.
 
-**Blob** = file content only (no name, no path).  
-**Tree** = directory listing, mapping names to blob/tree SHAs.  
-**Commit** = snapshot pointing to root tree + parent commit SHA + author/message metadata.  
-**Tag** = named, annotated reference to a commit.
+## Internal Working
+*(No Git internals — conceptual corrections)*
 
-When you `git add`, Git computes the blob SHA, writes the blob to `.git/objects/`, and records `filepath → SHA` in `.git/index` (the staging area).  
-When you `git commit`, Git builds trees from the index, creates a commit object pointing to the root tree, and advances the current branch pointer.  
-A **branch** is just a file containing one commit SHA — creating a branch is O(1).  
-**HEAD** is a symbolic reference pointing to the current branch (or directly to a commit in detached HEAD state).  
-Commits form a **DAG** — a directed acyclic graph where each commit points to its parent(s). Branching creates diverging paths; merging creates commits with two parents; rebasing replays commits on a new base (rewriting SHAs).  
-The **reflog** records every position HEAD has occupied — your safety net for recovery.
+## Command Explanation
 
----
-
-## 10. One-Page Cheatsheet
+### Syntax
+*(Commands shown inline with each trap)*
 
 ```
-GIT MASTER CHEATSHEET
-═══════════════════════════════════════════════════════════════════
+TRAP 1: "Git and GitHub are the same thing."
+TRUTH: Git = local CLI tool. GitHub = cloud hosting platform. Separate products.
 
-SETUP & INIT
-  git init                          init new repo
-  git clone <url>                   clone remote repo
-  git config --global user.name ""  set identity
-  git config --global user.email "" set identity
+TRAP 2: "Deleting a branch deletes its commits."
+TRUTH: Branches are pointers. Deleting a branch removes the pointer, not the
+       commits. They persist in objects/ until gc runs (after 30-90 days).
+       Recovery: git reflog → git switch -c branch <sha>
 
-STAGING & COMMITTING
-  git status [-s]                   show state
-  git add .                         stage all
-  git add -p                        interactive hunk staging ⭐
-  git commit -m "msg"               commit staged
-  git commit --amend                redo last commit
-  git diff [--staged]               unstaged [staged] changes
+TRAP 3: "git pull is always safe."
+TRUTH: git pull = fetch + merge. Default behavior creates merge commits.
+       Use: git pull --rebase  OR  git pull --ff-only
 
-BRANCHING
-  git switch -c feature/name        create + switch ⭐
-  git switch main                   switch branch
-  git branch -vv                    list + tracking info
-  git branch -d feature/name        delete merged
-  git branch -D feature/name        force delete
+TRAP 4: "Rebase is always better than merge."
+TRUTH: Rebase rewrites SHAs. On shared branches this breaks teammates' history.
+       Golden rule: rebase only LOCAL/PRIVATE commits.
 
-MERGING & REBASING
-  git merge feature/name            merge into current
-  git merge --no-ff feature/name    always merge commit
-  git rebase main                   rebase onto main
-  git rebase -i HEAD~n              interactive rebase ⭐
-  git cherry-pick <sha>             copy specific commit
+TRAP 5: "git reset --hard is unrecoverable."
+TRUTH: Mostly recoverable via git reflog within 90 days.
+       TRULY unrecoverable: untracked files removed by git clean -f.
 
-REMOTE
-  git fetch --prune                 fetch + clean refs
-  git pull --rebase                 fetch + rebase ⭐
-  git push -u origin feature        push + set tracking
-  git push --force-with-lease       safer force push
+TRAP 6: "Git stores diffs between commits."
+TRUTH: Git stores complete SNAPSHOTS. Efficiency comes from re-using identical
+       blob objects across commits (not from storing diffs).
+       Pack files use delta compression for storage — but logical model = snapshots.
 
-TAGS
-  git tag -a v1.0.0 -m "msg"       annotated tag ⭐
-  git push origin v1.0.0            push tag
+TRAP 7: "git commit -a stages everything."
+TRUTH: -a stages only TRACKED modified/deleted files.
+       New untracked files still need explicit git add.
 
-UNDOING
-  git restore --staged <file>       unstage
-  git restore <file>                discard working dir
-  git reset --soft  HEAD~1          undo commit, keep staged
-  git reset --mixed HEAD~1          undo commit, keep unstaged
-  git reset --hard  HEAD~1          undo commit, DISCARD ⚠️
-  git revert <sha>                  safe undo → new commit
+TRAP 8: "Force push is always bad."
+TRUTH: --force-with-lease on your own feature branches after rebasing = correct.
+       --force on shared branches = bad.
+       Never force push main, develop, or release/* branches.
 
-RECOVERY
-  git reflog                        all HEAD movements ⭐
-  git reset --hard HEAD@{n}         restore to reflog state
+TRAP 9: "The staging area is just a temporary copy."
+TRUTH: The staging area IS the specification of the next commit.
+       A file can be simultaneously modified in working dir AND staged with
+       older content. git commit takes STAGED version, not working dir version.
 
-HISTORY
-  git log --oneline --graph --all   visual history ⭐
-  git log -S "string"               pickaxe search
-  git log -- path/to/file           file history
-  git blame src/File.java           line authorship
-  git bisect start/bad/good/run     binary search ⭐
-
-INSPECTION
-  git cat-file -p <sha>             inspect git object
-  git ls-tree HEAD                  list tree
-  git ls-files --stage              list index with SHAs
-  git fsck --full                   verify integrity
-
-STASH
-  git stash [-u]                    stash [+ untracked]
-  git stash pop                     apply + remove
-  git stash list                    list stashes
-
-═══════════════════════════════════════════════════════════════════
-GOLDEN RULES
-  1. Never rebase shared branches
-  2. Prefer --force-with-lease over --force
-  3. Use git revert (not reset) on pushed commits
-  4. Small, atomic, well-described commits
-  5. Rotate secrets before git cleanup
-  6. When in doubt: git reflog
-═══════════════════════════════════════════════════════════════════
+TRAP 10: "A shallow clone is incomplete."
+TRUTH: A shallow clone has FULL FILE CONTENT for the checked-out state.
+       What's missing is deeper COMMIT HISTORY. For building software = fine.
+       For git blame / git bisect / git describe = needs fuller history.
 ```
 
 ---
 
-## 11. Topics to Study Beyond This Series
+# 7. One-Page Cheatsheet
 
-### Git at Scale
-- **Partial Clone** (`git clone --filter=blob:none`) — clone without downloading file content up front
-- **Sparse Checkout** — only checkout specific directories in monorepos
-- **Git Virtual File System (GVFS)** — Microsoft's solution for very large repos (Windows codebase)
-- **Scalar** — built-in Git monorepo performance tool (ships with Git 2.38+)
+## What is it?
+A complete single-view reference of the most important Git commands grouped by task — for last-minute review before interviews or daily reference.
 
-### Specialised Workflows
-- `git submodule` deep dive — complex scenarios and pitfalls
-- `git subtree` — alternative to submodules (no separate repo required)
-- `git bundle` — offline transfer of Git history
+## Why It Matters
+Interviewers often ask "walk me through your typical Git workflow" — this cheatsheet covers it all.
 
-### Security
-- **Signed Commits** — GPG signing (`git commit -S`) for commit authenticity
-- **Signed Tags** — `git tag -s` for verified releases
-- **GitHub's secret scanning** — automated detection of committed credentials
-- **SBOM generation** from Git history
+## Internal Working
+*(No internals — command reference)*
 
-### Tooling
-- **git-delta** — beautiful diff viewer
-- **lazygit** — terminal UI for Git
-- **gh CLI** — GitHub's official CLI (manage PRs, releases from terminal)
-- **pre-commit** — framework for managing Git hooks
-- **Conventional Commits + semantic-release** — automated versioning from commit messages
-- **git-crypt** — transparent encryption of files in Git repos
+## Command Explanation
 
-### Platform-Specific
-- **GitHub Actions** — CI/CD with Git events as triggers
-- **GitHub Protected Branches** — enforce PR reviews, status checks
-- **GitHub CODEOWNERS** — automatic review assignment
-- **GitLab CI/CD** — `.gitlab-ci.yml` pipeline configuration
-- **Gitea/Forgejo** — self-hosted Git platforms
+### Syntax
+```bash
+# ═══════════════════════════════════════════════════════════
+# GIT MASTER CHEATSHEET
+# ═══════════════════════════════════════════════════════════
+
+# SETUP & INIT
+git init                          # init new repo
+git clone --depth 1 <url>         # shallow clone (CI)
+git config --global user.name "Name"
+git config --global pull.rebase true
+
+# STAGING & COMMITTING
+git status -sb                    # compact status
+git add -p                        # interactive hunk staging ⭐
+git diff --staged                 # what will be committed
+git commit -m "feat(scope): msg"  # conventional commit
+git commit --amend                # fix last commit
+
+# BRANCHING
+git switch -c feature/name        # create + switch ⭐
+git switch -                      # previous branch
+git branch -vv                    # tracking + ahead/behind
+git branch -d feature/name        # delete merged branch
+
+# MERGING & REBASING
+git merge --no-ff feature/name    # merge with commit
+git rebase main                   # rebase onto main
+git rebase -i HEAD~n              # interactive rebase ⭐
+git cherry-pick <sha>             # copy specific commit
+
+# UNDOING
+git restore --staged <file>       # unstage
+git restore <file>                # discard working dir ⚠️
+git reset --soft  HEAD~1          # undo commit, keep staged
+git reset --mixed HEAD~1          # undo commit, keep unstaged
+git reset --hard  HEAD~1          # undo commit, DISCARD ⚠️
+git revert <sha>                  # safe undo → new commit ⭐
+git reset --hard ORIG_HEAD        # undo last merge/rebase
+
+# RECOVERY ← MOST IMPORTANT ⭐
+git reflog                        # find ANY lost commit
+
+# REMOTE
+git fetch --prune                 # fetch + clean stale refs
+git pull --rebase                 # fetch + rebase ⭐
+git push -u origin feature/name   # push + set tracking
+git push --force-with-lease       # safer force push ⭐
+
+# TAGS
+git tag -a v2.1.0 -m "msg"       # annotated tag ⭐
+git push origin v2.1.0            # push tag
+
+# HISTORY
+git log --oneline --graph --all --decorate  ⭐
+git log -S "string"               # pickaxe search ⭐
+git blame -L 10,25 src/File.java  # line authorship
+git bisect run ./test.sh          # binary search ⭐
+
+# INTERNALS
+git cat-file -p HEAD              # raw commit object
+git ls-files --stage              # index contents
+git fsck --full                   # integrity check
+
+# ═══════════════════════════════════════════════════════════
+# GOLDEN RULES
+# 1. Never rebase shared branches (main, develop, release/*)
+# 2. Use --force-with-lease, never --force on shared branches
+# 3. Use git revert (not reset) on pushed commits
+# 4. Always git clean -n (dry run) before git clean -f
+# 5. Rotate secrets BEFORE git filter-repo cleanup
+# 6. When in doubt: git reflog
+# ═══════════════════════════════════════════════════════════
+```
 
 ---
 
-> **Start of Series:** [01 · Git Introduction & Setup](./01_Git_Setup_and_Introduction.md)
+# 8. Topics to Study Beyond This Series
+
+## What is it?
+Advanced Git topics not covered in this series that appear in principal/staff engineer and architecture-level interviews.
+
+## Why It Matters
+These topics signal depth beyond typical senior level and demonstrate infrastructure/platform thinking.
+
+## Internal Working
+*(No internals — topic guide)*
+
+## Command Explanation
+
+### Syntax
+```bash
+# Partial Clone (monorepo optimisation)
+git clone --filter=blob:none <url>          # no blobs until needed
+git clone --filter=tree:0 <url>             # no trees until needed
+
+# Sparse Checkout (checkout subset of monorepo)
+git sparse-checkout init --cone
+git sparse-checkout set services/payment libs/shared
+
+# Scalar (built-in monorepo performance tool, Git 2.38+)
+scalar clone <url>                          # optimised large-repo clone
+
+# Commit graph (speed up log + merge-base)
+git commit-graph write --reachable
+git config fetch.writeCommitGraph true
+
+# Git maintenance (background optimisation)
+git maintenance start
+
+# Signed commits (GPG verification)
+git config --global commit.gpgsign true
+git verify-commit HEAD
+
+# SHA-256 object format (future of Git)
+git init --object-format=sha256
+```
+
+**Topics list:**
+- Partial Clone + Sparse Checkout (monorepo at scale)
+- Git Virtual File System / GVFS (Microsoft-scale repos)
+- Scalar (built-in Git monorepo optimisation)
+- GitOps with ArgoCD / Flux
+- Semantic Release + Conventional Commits automation
+- Git LFS (Large File Storage) for binary assets
+- GPG-signed commits and tags for release verification
+- CODEOWNERS + GitHub Rulesets for org-level policy
+- git bundle (offline repo transfer)
+- git subtree (alternative to submodules)
+- pre-commit framework (shareable hook management)
+- truffleHog / git-secrets (secret scanning)
+- BFG Repo Cleaner (fast alternative to filter-repo)
 
 ---
 
-*This knowledge base was built from first-principles notes enhanced for senior engineering interviews.*  
-*Topics: Version Control · Git Architecture · File Lifecycle · Branching · Merging · Remote Collaboration · Advanced Commands · Production Workflows*
+> **Start of Series:** [01 · Git Introduction & Setup](./01_Git_Setup_and_Introduction.md)  
+> **Next:** [08 · Git Commit Messages & Conventions →](./08_Git_Commit_Messages_and_Conventions.md)
